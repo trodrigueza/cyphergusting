@@ -1,5 +1,8 @@
 #include "caesar_cipher.h"
 #include <cctype>
+#include <iostream>
+#include <vector>
+using namespace std;
 
 string CaesarCipher::encrypt(const string &plaintext, const string &key) {
   const int shift = stoi(key);
@@ -23,4 +26,13 @@ string CaesarCipher::decrypt(const string &ciphertext, const string &key) {
     } else plaintext += c; // ' '
   }
   return plaintext;
+}
+
+void CaesarCipher::attack(const string &ciphertext) {
+  vector<string> possibleSols;
+  for (int key = 0; key < 26; key++) {
+    string psol = decrypt(ciphertext, to_string(key));
+    possibleSols.push_back(psol);
+    cout << "Key " << key << ": " << psol << "\n";
+  }
 }

@@ -9,6 +9,7 @@ class CaesarCipher : public Cipher {
   public:
     string encrypt(const string &plaintext, const string &key) override;
     string decrypt(const string &ciphertext, const string &key) override;
+    void attack(const string &ciphertext) override;
 };
 
 #endif // CAESAR_CIPHER

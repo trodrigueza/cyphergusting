@@ -9,6 +9,7 @@ class Cipher {
   public:
     virtual string encrypt(const string &text, const string &key) = 0;
     virtual string decrypt(const string &text, const string &key) = 0;
+    virtual void attack(const string &text) = 0;
     virtual ~Cipher() = default;
 };
 
