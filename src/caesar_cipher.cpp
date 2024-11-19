@@ -20,7 +20,7 @@ string CaesarCipher::decrypt(const string &ciphertext, const string &key) {
     if (isalpha(c)) {
       char guide = islower(c) ? 'a' : 'A';
       plaintext += ((c - guide - shift + 26) % 26) + guide;
-    } else plaintext += c;
+    } else plaintext += c; // ' '
   }
   return plaintext;
 }
