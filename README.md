@@ -4,3 +4,4 @@ See `main` for example.
 
 Types implemented:
 - Caesar.
+- Substitution.
