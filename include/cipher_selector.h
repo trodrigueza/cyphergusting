@@ -4,6 +4,7 @@
 
 #include "cipher.h"
 #include "caesar_cipher.h"
+#include "substitution_cipher.h"
 #include <memory>
 #include <string>
 using namespace std;
