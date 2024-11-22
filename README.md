@@ -1,7 +1,8 @@
 Implementing some classic Cryptosistems from book Cryptography: Theory and Practice.
 
-See `main` for example.
+Run `main` for example.
 
-Types implemented:
+Types supported:
 - Caesar.
 - Substitution.
+- Affine.

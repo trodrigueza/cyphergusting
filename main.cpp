@@ -10,8 +10,9 @@ void printMenu() {
 
 void printType() {
   cout << "\nInput the cipher type:\n\n";
-  cout << "   1 --> Caesar.\n";
-  cout << "   2 --> Substitution.\n\n> ";
+  cout << "   1 --> Caesar.\n\n";
+  cout << "   2 --> Substitution.\n\n";
+  cout << "   3 --> Affine.\n\n> ";
 }
 
 int main() {
