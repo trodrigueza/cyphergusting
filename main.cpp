@@ -12,7 +12,8 @@ void printType() {
   cout << "\nInput the cipher type:\n\n";
   cout << "   1 --> Caesar.\n\n";
   cout << "   2 --> Substitution.\n\n";
-  cout << "   3 --> Affine.\n\n> ";
+  cout << "   3 --> Affine.\n\n";
+  cout << "   4 --> Vigenere.\n\n> ";
 }
 
 int main() {
@@ -49,7 +50,7 @@ int main() {
     auto decipher = CipherSelector::createCipher(type);
     cout << "\nDecrypted text:\n\n> " << decipher->decrypt(text, key) << "\n";
 
-  } else {
+  } else if (obj == "3") {
     cout << "\nInput the text you want to decrypt:\n\n> ";
     getline(cin, text);
 
@@ -60,6 +61,8 @@ int main() {
     cout << "\nDecrypted text:\n\n> " << "\n";
     decipher->attack(text);
 
+  } else {
+    cout << "\nChoose a valid option!\n";
   }
   cout << "\n----------------------------------------------------\n";
   return 0;
