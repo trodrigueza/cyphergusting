@@ -11,7 +11,7 @@ string VigenereCipher::encrypt(const string &plaintext, const string &key) {
       throw std::invalid_argument("Key should consist of alphabetic characters.");
   }
   if (n < m)
-    throw std::invalid_argument("Key length should be smaller than plaintext.");
+    throw std::invalid_argument("Plaintext should not be shorter than key.");
 
   string lowKey = "";
   string upKey = "";
@@ -20,7 +20,8 @@ string VigenereCipher::encrypt(const string &plaintext, const string &key) {
     upKey += toupper(c);
   }
 
-  string ciphertext = "";
+  string ciphertext;
+  ciphertext.reserve(n);
   for (int i = 0; i < n; i++) {
     if (isalpha(plaintext[i])) {
       ciphertext += islower(plaintext[i]) ? (plaintext[i] - 'a' + lowKey[i % m] - 'a') % 26 + 'a' : (plaintext[i] - 'A' + upKey[i % m] - 'A') % 26 + 'A';
@@ -37,7 +38,7 @@ string VigenereCipher::decrypt(const string &ciphertext, const string &key) {
       throw std::invalid_argument("Key should consist of alphabetic characters.");
   }
   if (n < m)
-    throw std::invalid_argument("Key length should be smaller than ciphertext.");
+    throw std::invalid_argument("Plaintext should not be shorter than key.");
 
   string lowKey = "";
   string upKey = "";
@@ -46,7 +47,8 @@ string VigenereCipher::decrypt(const string &ciphertext, const string &key) {
     upKey += toupper(c);
   }
 
-  string plaintext = "";
+  string plaintext;
+  plaintext.reserve(n);
   for (int i = 0; i < n; i++) {
     if (isalpha(ciphertext[i])) {
       plaintext += islower(ciphertext[i]) ? (((ciphertext[i] - lowKey[i % m]) % 26) + 26) % 26 + 'a' : (((ciphertext[i] - upKey[i % m]) % 26) + 26) % 26 + 'A';
