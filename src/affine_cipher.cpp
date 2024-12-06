@@ -8,6 +8,17 @@
 // #include <vector>
 using namespace std;
 
+int gcd(int a, int b) {
+    a = abs(a);
+    b = abs(b);
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
 string AffineCipher::encrypt(const string &plaintext, const string &key) {
   int a = -1;
   int b = -1;
