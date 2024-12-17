@@ -5,3 +5,5 @@ Types supported:
 - Substitution.
 - Affine.
 - Vigenere.
+- Hill
+- Block Permutations
