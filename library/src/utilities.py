@@ -8,11 +8,11 @@ def toInt(a:str):
     else:
         raise ValueError("Not alphabetic")
 
-@staticmethod    
+@staticmethod
 def toStr(a:int):
     return chr(a + ord("A"))
 
-@staticmethod 
+@staticmethod
 def intToPermutation(index, n):
     # Permutations range between 0 and (n! - 1)
     # Step 1: Generate the permutation from the integer

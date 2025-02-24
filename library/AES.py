@@ -46,6 +46,7 @@ def encrypt_image(image_path, password, output_path, mode='CBC'):
     encrypted_data = salt + iv + ciphertext
     image = Image.frombytes('L', (len(encrypted_data) // 256 + 1, 256), encrypted_data.ljust((len(encrypted_data) // 256 + 1) * 256, b'\0'))
     image.save(output_path, format='PNG')
+    return True
 
 # Decrypt Image with AES
 

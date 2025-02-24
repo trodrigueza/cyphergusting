@@ -1,7 +1,7 @@
 import numpy as np
 from sympy import Matrix, mod_inverse
 from math import sqrt
-from utilities import toInt, toStr
+from library.src.utilities import toInt, toStr
 
 class HillCipher:
     mod = 26
@@ -32,7 +32,7 @@ class HillCipher:
             raise ValueError("Key is not a valid square matrix")
 
     @staticmethod
-    def encript(plainText, key):
+    def encrypt(plainText, key):
         text = np.vectorize(toInt)(np.array(list(plainText.replace(" ", "").upper())))
         keyM = HillCipher.CheckValidKey(plainText, key)
 
@@ -49,7 +49,7 @@ class HillCipher:
         return cipherText
     
     @staticmethod
-    def decript(cipherText, key):
+    def decrypt(cipherText, key):
         text = np.vectorize(toInt)(np.array(list(cipherText.replace(" ", "").upper())))
         keyM = HillCipher.CheckValidKey(cipherText, key)
 

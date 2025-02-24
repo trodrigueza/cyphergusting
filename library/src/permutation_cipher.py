@@ -1,13 +1,13 @@
 import numpy as np
 from math import factorial
-from utilities import toInt, toStr, intToPermutation
+from .utilities import toInt, toStr, intToPermutation
 
 class PermutationCipher:
 
     mod = 26
 
     @staticmethod
-    def encript(plainText, key):
+    def encrypt(plainText, key):
         textSize = len(plainText)
         pairKey = key.split()
 
@@ -36,7 +36,7 @@ class PermutationCipher:
         return cipherText
     
     @staticmethod
-    def decript(cipherText, key):
+    def decrypt(cipherText, key):
         textSize = len(cipherText)
         pairKey = key.split()
 
