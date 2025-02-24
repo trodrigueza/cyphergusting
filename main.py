@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QLabel, QComboBox, QTextEdit, QLineEdit, QFileDialog, QMessageBox
 )
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
 import ast
 
 # Importamos las funciones de cifrado
@@ -217,6 +218,12 @@ class ImageWindow(QMainWindow):
         self.combo_operation.addItems(["Encriptar", "Desencriptar"])
         layout.addWidget(self.combo_operation)
 
+        # Menú desplegable para seleccionar modo de encripcion
+        layout.addWidget(QLabel("Seleccione el modo de encripcion:"))
+        self.enc_mode = QComboBox()
+        self.enc_mode.addItems(['CBC', 'CFB', 'OFB', 'CTR'])
+        layout.addWidget(self.enc_mode)
+
         # Botón para seleccionar la imagen
         self.btn_choose = QPushButton("Seleccionar Imagen")
         self.btn_choose.clicked.connect(self.selectImage)
@@ -231,7 +238,7 @@ class ImageWindow(QMainWindow):
         self.image_label = QLabel("La imagen encriptada/desencriptada se mostrará aquí")
         self.image_label.setFixedSize(300, 300)
         self.image_label.setStyleSheet("border: 1px solid black;")
-        layout.addWidget(self.image_label)
+        layout.addWidget(self.image_label, alignment=Qt.AlignCenter)
 
         widget.setLayout(layout)
         self.setCentralWidget(widget)
@@ -254,14 +261,15 @@ class ImageWindow(QMainWindow):
             return
 
         operation = self.combo_operation.currentText()
+        mode = self.enc_mode.currentText()
         output_path = None
         try:
             if operation == "Encriptar":
                 # Se asume que encrypt_image guarda la imagen en AES_cipher.encryption_path
-                result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode='OFB')
+                result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode)
                 output_path = AES_cipher.encryption_path
             else:  # Desencriptar
-                result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode='OFB')
+                result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode)
                 output_path = AES_cipher.decryption_path
 
             if result:
