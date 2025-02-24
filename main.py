@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QLabel, QComboBox, QTextEdit, QLineEdit, QFileDialog, QMessageBox
 )
 from PyQt5.QtGui import QPixmap
+import ast
 
 # Importamos las funciones de cifrado
 import library.src.affine_cipher as affine_cipher
@@ -13,6 +14,8 @@ import library.src.permutation_cipher as permutation_cipher
 import library.src.substitution_cipher as substitution_cipher
 import library.src.vigenere_cipher as vigenere_cipher
 import library.AES as AES_cipher
+import library.elgamal as elgamal_cipher
+import library.rsa as rsa_cipher
 
 # Se asume que en el módulo AES_cipher se definen:
 # AES_cipher.encryption_path = "library/img/encrypted_image"
@@ -69,7 +72,7 @@ class TextWindow(QMainWindow):
         # Menú desplegable para seleccionar el tipo de cifrado
         layout.addWidget(QLabel("Seleccione el tipo de cifrado:"))
         self.combo_cipher = QComboBox()
-        self.combo_cipher.addItems(["Afin", "Caesar", "Hill", "Permutativo", "Sustitutivo", "Vigenere"])
+        self.combo_cipher.addItems(["Afin", "Caesar", "Hill", "Permutativo", "Sustitutivo", "Vigenere", "Elgamal", "RSA"])
         layout.addWidget(self.combo_cipher)
 
         # Menú desplegable para seleccionar la operación
@@ -134,6 +137,19 @@ class TextWindow(QMainWindow):
                     result = substitution_cipher.SubstitutionCipher.encrypt(text, key)
                 elif cipher_type == "Vigenere":
                     result = vigenere_cipher.VigenereCipher.encrypt(text, key)
+                elif cipher_type == "Elgamal":
+                    # Genera las claves para Elgamal
+                    public_key, private_key = elgamal_cipher.generate_keys(32)
+                    ciphertext = elgamal_cipher.encrypt(public_key, text)
+                    # Se muestran las claves junto con el texto cifrado
+                    result = (f"{ciphertext}\n\nClaves generadas:\n"
+                            f"Publica: {public_key}\nPrivada: {private_key}")
+                elif cipher_type == "RSA":
+                    # Genera las claves para RSA
+                    public_key, private_key = rsa_cipher.generate_keypair()
+                    ciphertext = rsa_cipher.encrypt(public_key, text)
+                    result = (f"{ciphertext}\n\nClaves generadas:\n"
+                            f"Publica: {public_key}\nPrivada: {private_key}")
             elif operation == "Desencriptar":
                 if cipher_type == "Afin":
                     result = affine_cipher.AffineCipher.decrypt(text, key)
@@ -147,6 +163,27 @@ class TextWindow(QMainWindow):
                     result = substitution_cipher.SubstitutionCipher.decrypt(text, key)
                 elif cipher_type == "Vigenere":
                     result = vigenere_cipher.VigenereCipher.decrypt(text, key)
+                elif cipher_type == "Elgamal":
+                # Para desencriptar se espera que el usuario ingrese las claves en un formato definido, por ejemplo: "publica|privada"
+                    try:
+                        # Suponiendo que 'key' es la cadena ingresada por el usuario:
+                        public_key_str, private_key_str = key.split("-")
+                        print(public_key_str, " - ", private_key_str)
+                        public_key = ast.literal_eval(public_key_str)  # Convierte la cadena a tupla, ej.: (3482710657, 5, 829267584)
+                        print(public_key)
+                        print(type(public_key))
+                        private_key = int(private_key_str)              # Convierte la parte de la clave privada a entero
+                        print(type(private_key))
+                        textTuple = ast.literal_eval(text)
+                    except Exception as e:
+                        result = "Formato de clave inválido. Use: public_key|private_key"
+                    else:
+                        result = elgamal_cipher.decrypt(public_key, private_key, textTuple)
+                elif cipher_type == "RSA":
+                    # Para RSA se espera que se ingrese la clave privada en el campo de clave
+                    private_key = ast.literal_eval(key)  # Convierte la cadena a tupla, ej.: (3482710657, 5, 829267584)
+                    textTuple = ast.literal_eval(text)
+                    result = rsa_cipher.decrypt(private_key, textTuple)
             else:
                 result = "El ataque aún no está implementado para este cifrado."
         except Exception as e:
