@@ -78,6 +78,7 @@ def decrypt_image(encrypted_path, password, output_path, mode='CBC'):
     # Save decrypted image
     with open(output_path, 'wb') as f:
         f.write(image_data)
+    return True
 
 # Example usage:
 encrypt_image(data_path, 'mypassword', encryption_path, mode='OFB')
