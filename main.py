@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QLabel, QComboBox, QTextEdit, QLineEdit, QFileDialog, QMessageBox
 )
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
 import ast
 
 # Importamos las funciones de cifrado
@@ -25,26 +26,41 @@ import library.rsa as rsa_cipher
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.setWindowTitle("Selección de Cifrado")
-        self.setGeometry(100, 100, 300, 200)
+        self.setWindowTitle("Cyphergusting")
+        self.setGeometry(100, 100, 600, 400)
         self.initUI()
 
     def initUI(self):
         widget = QWidget()
         layout = QVBoxLayout()
 
+        # Título principal
+        title = QLabel("Cyphergusting")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 30px; font-weight: bold;")
+        layout.addWidget(title, alignment=Qt.AlignCenter)
+
+        # Subtítulo con nombres
+        subtitle = QLabel("Hecho por:\nJuan Camilo Daza Gutiérrez\nNicolás Duque Molina\nAndrés Felipe Poveda Bellon\nTomás David Rodríguez Agudelo")
+        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle.setStyleSheet("font-size: 12px; margin-bottom: 10px;")
+        layout.addWidget(subtitle, alignment=Qt.AlignCenter)
+
         label = QLabel("Seleccione el tipo de cifrado:")
-        layout.addWidget(label)
+        label.setStyleSheet("font-size: 20px; margin-bottom: 10px;")
+        layout.addWidget(label, alignment=Qt.AlignCenter)
 
         # Botón para cifrado de texto
         btn_text = QPushButton("Cifrado de Texto")
         btn_text.clicked.connect(self.openTextWindow)
-        layout.addWidget(btn_text)
+        btn_text.setStyleSheet("font-size: 22px;")
+        layout.addWidget(btn_text, alignment=Qt.AlignCenter)
 
         # Botón para cifrado de imagen
         btn_image = QPushButton("Cifrado de Imagen")
         btn_image.clicked.connect(self.openImageWindow)
-        layout.addWidget(btn_image)
+        btn_image.setStyleSheet("font-size: 22px;")
+        layout.addWidget(btn_image, alignment=Qt.AlignCenter)
 
         widget.setLayout(layout)
         self.setCentralWidget(widget)
@@ -176,7 +192,7 @@ class TextWindow(QMainWindow):
                         print(type(private_key))
                         textTuple = ast.literal_eval(text)
                     except Exception as e:
-                        result = "Formato de clave inválido. Use: public_key|private_key"
+                        result = "Formato de clave inválido. Use: public_key-private_key"
                     else:
                         result = elgamal_cipher.decrypt(public_key, private_key, textTuple)
                 elif cipher_type == "RSA":
@@ -217,6 +233,12 @@ class ImageWindow(QMainWindow):
         self.combo_operation.addItems(["Encriptar", "Desencriptar"])
         layout.addWidget(self.combo_operation)
 
+        # Menú desplegable para seleccionar modo de encripcion
+        layout.addWidget(QLabel("Seleccione el modo de encripcion:"))
+        self.enc_mode = QComboBox()
+        self.enc_mode.addItems(['CBC', 'CFB', 'OFB', 'CTR'])
+        layout.addWidget(self.enc_mode)
+
         # Botón para seleccionar la imagen
         self.btn_choose = QPushButton("Seleccionar Imagen")
         self.btn_choose.clicked.connect(self.selectImage)
@@ -231,7 +253,7 @@ class ImageWindow(QMainWindow):
         self.image_label = QLabel("La imagen encriptada/desencriptada se mostrará aquí")
         self.image_label.setFixedSize(300, 300)
         self.image_label.setStyleSheet("border: 1px solid black;")
-        layout.addWidget(self.image_label)
+        layout.addWidget(self.image_label, alignment=Qt.AlignCenter)
 
         widget.setLayout(layout)
         self.setCentralWidget(widget)
@@ -254,14 +276,15 @@ class ImageWindow(QMainWindow):
             return
 
         operation = self.combo_operation.currentText()
+        mode = self.enc_mode.currentText()
         output_path = None
         try:
             if operation == "Encriptar":
                 # Se asume que encrypt_image guarda la imagen en AES_cipher.encryption_path
-                result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode='OFB')
+                result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode)
                 output_path = AES_cipher.encryption_path
             else:  # Desencriptar
-                result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode='OFB')
+                result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode)
                 output_path = AES_cipher.decryption_path
 
             if result:
