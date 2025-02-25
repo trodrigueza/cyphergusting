@@ -125,7 +125,7 @@ def iniciar_visualizacion(palabra):
     configuracion_brauer = [len(lema) for lema in lemas]
     gra, letra_a_movimientos = crear_grafo_palabras(lemas)
 
-    app = QApplication(sys.argv)
+    # Se crea la ventana pero sin una nueva instancia de QApplication
     ventana = GrafoApp(gra, letra_a_movimientos, palabra, configuracion_brauer)
     ventana.show()
-    sys.exit(app.exec_())
+    return ventana  # Devolver la ventana por si se requiere mantener una referencia

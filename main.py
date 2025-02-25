@@ -17,6 +17,7 @@ import library.src.vigenere_cipher as vigenere_cipher
 import library.AES as AES_cipher
 import library.elgamal as elgamal_cipher
 import library.rsa as rsa_cipher
+import library.src.analisisdebrauer as atack_brauer
 
 # Se asume que en el módulo AES_cipher se definen:
 # AES_cipher.encryption_path = "library/img/encrypted_image"
@@ -200,6 +201,8 @@ class TextWindow(QMainWindow):
                     private_key = ast.literal_eval(key)  # Convierte la cadena a tupla, ej.: (3482710657, 5, 829267584)
                     textTuple = ast.literal_eval(text)
                     result = rsa_cipher.decrypt(private_key, textTuple)
+            elif operation == "Ataque":
+                ventana_ataque = atack_brauer.iniciar_visualizacion(text)
             else:
                 result = "El ataque aún no está implementado para este cifrado."
         except Exception as e:
