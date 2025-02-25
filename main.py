@@ -18,6 +18,7 @@ import library.AES as AES_cipher
 import library.elgamal as elgamal_cipher
 import library.rsa as rsa_cipher
 import library.src.analisisdebrauer as atack_brauer
+import library.src.RSA_atack as atack_rsa
 
 # Se asume que en el módulo AES_cipher se definen:
 # AES_cipher.encryption_path = "library/img/encrypted_image"
@@ -91,6 +92,7 @@ class TextWindow(QMainWindow):
         self.combo_cipher = QComboBox()
         self.combo_cipher.addItems(["Afin", "Caesar", "Hill", "Permutativo", "Sustitutivo", "Vigenere", "Elgamal", "RSA"])
         layout.addWidget(self.combo_cipher)
+        self.combo_cipher.currentIndexChanged.connect(self.toggleKeyField)
 
         # Menú desplegable para seleccionar la operación
         layout.addWidget(QLabel("Seleccione la operación:"))
@@ -129,9 +131,13 @@ class TextWindow(QMainWindow):
     def toggleKeyField(self):
         """ Muestra u oculta el campo de clave según la operación seleccionada. """
         operation = self.combo_operation.currentText()
-        is_key_required = operation in ["Encriptar", "Desencriptar"]
-        self.key_label.setVisible(is_key_required)
-        self.key_input.setVisible(is_key_required)
+        cipher = self.combo_cipher.currentText()
+        if operation in ["Encriptar", "Desencriptar"] or (operation == "Ataque" and cipher == "RSA"):
+            self.key_label.setVisible(True)
+            self.key_input.setVisible(True)
+        else:
+            self.key_label.setVisible(False)
+            self.key_input.setVisible(False)
 
     def executeOperation(self):
         cipher_type = self.combo_cipher.currentText()
@@ -202,7 +208,21 @@ class TextWindow(QMainWindow):
                     textTuple = ast.literal_eval(text)
                     result = rsa_cipher.decrypt(private_key, textTuple)
             elif operation == "Ataque":
-                ventana_ataque = atack_brauer.iniciar_visualizacion(text)
+                if cipher_type == "RSA":
+                    try:
+                        # Se espera que el usuario ingrese n y e separados por comas.
+                        # Ejemplo de entrada: "3233, 17"
+                        partes = key.split(',')
+                        if len(partes) != 2:
+                            raise ValueError("Ingrese n, e y c separados por comas.")
+                        e = int(partes[0].strip())
+                        n = int(partes[1].strip())
+                        c = atack_rsa.parse_ciphertext(text.strip())
+                        result = atack_rsa.ataque_rsa(n, e, c)
+                    except Exception as ex:
+                        result = "Error: " + str(ex)
+                else:
+                    atack_brauer.iniciar_visualizacion(text)
             else:
                 result = "El ataque aún no está implementado para este cifrado."
         except Exception as e:
