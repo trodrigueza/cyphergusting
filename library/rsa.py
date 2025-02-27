@@ -65,7 +65,7 @@ def encrypt(pk, plaintext):
   return cipher
 
 def decrypt(pk, ciphertext):
-  d, n = pk  
+  d, n = pk
   # Descifra cada número y lo convierte de vuelta a un carácter
   plain = [chr(pow(char, d, n)) for char in ciphertext]
   return ''.join(plain)  # Reconstruye mensaje 

@@ -346,7 +346,7 @@ class TextWindow(QMainWindow):
             "RSA": {
                 "Encriptar": "Clave pública (n,e)",
                 "Desencriptar": "Clave privada (n,d)",
-                "Ataque": "Clave privada (n,d)"
+                "Ataque": "Clave pública (n,e)"
             },
             "Elgamal": {
                 "Encriptar": "Clave pública en formato p,g,h",
@@ -373,7 +373,7 @@ class TextWindow(QMainWindow):
             "RSA": {
                 "Encriptar": "Clave pública (n,e):",
                 "Desencriptar": "Clave privada (n,d):",
-                "Ataque": "Clave privada (n,d):"
+                "Ataque": "Clave pública (n,e):"
             },
             "Elgamal": {
                 "Encriptar": "Clave pública (p,g,h):",
@@ -480,13 +480,19 @@ class TextWindow(QMainWindow):
                     try:
                         partes = key.split(',')
                         if len(partes) != 2:
-                            raise ValueError("Ingrese n, d separados por comas.")
-                        n = int(partes[0].strip())
-                        d = int(partes[1].strip())
-                        c = atack_rsa.parse_ciphertext(text.strip())
-                        result = atack_rsa.ataque_rsa(n, d, c)
+                            raise ValueError("Ingrese d, n separados por comas.")
+                        d = int(partes[0].strip())
+                        n = int(partes[1].strip())
+                        private_key = (d, n)
+
+                        # Se asume que el mensaje cifrado (text) se ingresa como números separados por comas,
+                        # por ejemplo: "123, 456, 789"
+                        ciphertext = [int(num.strip()) for num in text.split(',')]
+                        
+                        decrypted_message = rsa_cipher.decrypt(private_key, ciphertext)
+                        result = f"Mensaje desencriptado: {decrypted_message}"
                     except Exception as ex:
-                        result = f"Error en el ataque RSA: {str(ex)}"
+                        result = f"Error en desencriptado: {str(ex)}"
             elif operation == "Ataque":
                 if cipher_type == "RSA":
                     try:
@@ -565,7 +571,7 @@ class ImageWindow(QMainWindow):
         controls_layout.addWidget(QLabel("Operación:"), 1, 0)
         self.combo_operation = QComboBox()
         self.combo_operation.addItems(["Encriptar", "Desencriptar", "Ataque"])
-        layout.addWidget(self.combo_operation)
+        controls_layout.addWidget(self.combo_operation)
 
         # Selector de modo de encripción
         controls_layout.addWidget(QLabel("Modo de encripción:"), 2, 0)
@@ -647,6 +653,7 @@ class ImageWindow(QMainWindow):
                 Qt.SmoothTransformation
             )
             self.image_label.setPixmap(scaled_pixmap)
+            self.image_label.adjustSize()
             self.image_label.setStyleSheet("""
                 QLabel {
                     background-color: white;
@@ -714,8 +721,13 @@ class ImageWindow(QMainWindow):
             # Si se obtuvo un archivo de salida, se muestra la imagen resultante
             if output_path:
                 pixmap = QPixmap(output_path)
-                self.image_label.setPixmap(pixmap.scaled(self.image_label.size()))
-                self.image_label.setScaledContents(True)
+                scaled_pixmap = pixmap.scaled(
+                    self.image_label.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.image_label.setPixmap(scaled_pixmap)
+                self.image_label.adjustSize()
                 self.showMessage(operation + " completado.")
             else:
                 self.showMessage("Error en el proceso de " + operation.lower() + ".")
