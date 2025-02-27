@@ -99,6 +99,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Cyphergusting")
         self.setGeometry(100, 100, 1000, 800)
+        self.showMaximized()
         self.setStyleSheet(STYLE_SHEET)
         self.initUI()
 
@@ -218,6 +219,7 @@ class TextWindow(QMainWindow):
         self.category_type = category_type
         self.setWindowTitle(self.get_window_title())
         self.setGeometry(150, 150, 800, 600)
+        self.showMaximized()
         self.setStyleSheet(STYLE_SHEET)
         self.initUI()
 
@@ -335,16 +337,16 @@ class TextWindow(QMainWindow):
         
         # Configurar el placeholder según el tipo de cifrado
         key_formats = {
-            "Afin": "Formato: a,b (ejemplo: 3,7) - a debe ser coprimo con 26",
+            "Afin": "Formato: a b (ejemplo: 3 7) - a debe ser coprimo con 26",
             "Desplazamiento": "Número entero entre 0 y 25",
-            "Hill": "Matriz cuadrada (ejemplo para 2x2: 2,3,1,4)",
-            "Permutación": "Permutación de números (ejemplo: 3,1,4,2)",
-            "Sustitución": "Alfabeto de sustitución de 26 letras",
+            "Hill": "Matriz cuadrada (ejemplo para 2x2: ADBE)",
+            "Permutación": "Formato n k (n divide la longitud del mensaje, k es la k-ésima permutación (orden lexicográfico))",
+            "Sustitución": "Número entero k (k-ésima permutación) o alfabeto de 26 letras",
             "Vigenere": "Palabra clave (solo letras)",
             "RSA": {
                 "Encriptar": "Clave pública (n,e)",
                 "Desencriptar": "Clave privada (n,d)",
-                "Ataque": "Clave pública (e,n)"
+                "Ataque": "Clave privada (n,d)"
             },
             "Elgamal": {
                 "Encriptar": "Clave pública en formato p,g,h",
@@ -371,7 +373,7 @@ class TextWindow(QMainWindow):
             "RSA": {
                 "Encriptar": "Clave pública (n,e):",
                 "Desencriptar": "Clave privada (n,d):",
-                "Ataque": "Clave pública (e,n):"
+                "Ataque": "Clave privada (n,d):"
             },
             "Elgamal": {
                 "Encriptar": "Clave pública (p,g,h):",
@@ -476,11 +478,15 @@ class TextWindow(QMainWindow):
                         result = "Error: Formato de clave inválido. Use: public_key-private_key"
                 elif cipher_type == "RSA":
                     try:
-                        private_key = ast.literal_eval(key)
-                        textTuple = ast.literal_eval(text)
-                        result = rsa_cipher.decrypt(private_key, textTuple)
-                    except Exception as e:
-                        result = f"Error: Formato de clave inválido - {str(e)}"
+                        partes = key.split(',')
+                        if len(partes) != 2:
+                            raise ValueError("Ingrese n, d separados por comas.")
+                        n = int(partes[0].strip())
+                        d = int(partes[1].strip())
+                        c = atack_rsa.parse_ciphertext(text.strip())
+                        result = atack_rsa.ataque_rsa(n, d, c)
+                    except Exception as ex:
+                        result = f"Error en el ataque RSA: {str(ex)}"
             elif operation == "Ataque":
                 if cipher_type == "RSA":
                     try:
@@ -524,6 +530,7 @@ class ImageWindow(QMainWindow):
         super(ImageWindow, self).__init__()
         self.setWindowTitle("Cifrado de Imágenes")
         self.setGeometry(150, 150, 800, 700)
+        self.showMaximized()
         self.setStyleSheet(STYLE_SHEET)
         self.image_path = None
         self.initUI()
@@ -725,123 +732,472 @@ class SignatureWindow(QMainWindow):
         super(SignatureWindow, self).__init__()
         self.setWindowTitle("Firmas Digitales")
         self.setGeometry(150, 150, 900, 700)
+        self.showMaximized()
         self.setStyleSheet(STYLE_SHEET)
         self.ds = digital_signatures.DigitalSignature()
+        self.signature_path = None
         self.initUI()
 
     def initUI(self):
+        # Create the main widget
         widget = QWidget()
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
+        widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # Allow resizing
+
+        # Create the main layout
+        layout = QVBoxLayout(widget)
 
         # Contenedor principal
         main_frame = QFrame()
         main_frame.setProperty("class", "card")
         main_layout = QVBoxLayout(main_frame)
 
-        # Título
-        title = QLabel("Firmas Digitales")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 20px;")
-        title.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title)
 
-        # Sección de generación de claves
+        # Título principal con icono simulado
+        title_bar = QHBoxLayout()
+        # title_icon = QLabel("🔐")
+        # title_icon.setStyleSheet("font-size: 28px; margin-right: 10px;")
+        title = QLabel("Sistema de Firmas Digitales")
+        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #2c3e50;")
+        # title_bar.addWidget(title_icon)
+        title_bar.addWidget(title)
+        title_bar.addStretch()
+        main_layout.addLayout(title_bar)
+        
+        # Descripción
+        description = QLabel("Creación, gestión y verificación de firmas digitales para la integridad y autenticidad de documentos")
+        description.setStyleSheet("color: #7f8c8d; font-size: 14px; margin-bottom: 20px;")
+        description.setWordWrap(True)
+        main_layout.addWidget(description)
+
+        # Línea separadora
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("border: 1px solid #e0e0e0; margin: 10px 0px 20px 0px;")
+        main_layout.addWidget(separator)
+
+        # Crear un layout horizontal para las dos secciones principales
+        sections_layout = QHBoxLayout()
+
+        # ---- SECCIÓN IZQUIERDA: GENERACIÓN DE CLAVES ----
         key_section = QFrame()
         key_section.setStyleSheet("""
             QFrame {
                 background-color: #f8f9fa;
-                border-radius: 5px;
-                padding: 15px;
-                margin: 10px 0;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 5px;
+                border: 1px solid #e0e0e0;
             }
         """)
         key_layout = QVBoxLayout(key_section)
 
+        # Título con icono
+        key_title_layout = QHBoxLayout()
+        # key_icon = QLabel("🔑")
+        # key_icon.setStyleSheet("font-size: 22px; margin-right: 10px;")
         key_title = QLabel("Generación de Claves")
-        key_title.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;")
-        key_layout.addWidget(key_title)
+        key_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #2980b9;")
+        # key_title_layout.addWidget(key_icon)
+        key_title_layout.addWidget(key_title)
+        key_title_layout.addStretch()
+        key_layout.addLayout(key_title_layout)
 
-        # Selector de algoritmo
-        algo_layout = QHBoxLayout()
-        algo_layout.addWidget(QLabel("Algoritmo:"))
+        # Descripción de la sección
+        key_desc = QLabel("Crea pares de claves criptográficas para firmar y verificar documentos")
+        key_desc.setWordWrap(True)
+        key_desc.setStyleSheet("color: #7f8c8d; margin-bottom: 15px;")
+        key_layout.addWidget(key_desc)
+
+        # Selector de algoritmo con estilo mejorado
+        algo_frame = QFrame()
+        algo_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 6px;
+                padding: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        algo_layout = QVBoxLayout(algo_frame)
+        
+        algo_label = QLabel("Selecciona el algoritmo:")
+        algo_label.setStyleSheet("font-weight: bold; color: #34495e;")
+        algo_layout.addWidget(algo_label)
+        
+        algo_desc_layout = QHBoxLayout()
+        
         self.algo_combo = QComboBox()
         self.algo_combo.addItems(['RSA', 'DSA', 'ECDSA'])
-        algo_layout.addWidget(self.algo_combo)
-        key_layout.addLayout(algo_layout)
+        self.algo_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QComboBox::drop-down {
+                border: 0px;
+            }
+            QComboBox::down-arrow {
+                image: url(dropdown.png);
+                width: 14px;
+                height: 14px;
+            }
+        """)
+        
+        algo_info = QLabel("ℹ️")
+        algo_info.setStyleSheet("font-size: 16px; color: #3498db;")
+        algo_info.setToolTip("RSA: Mayor seguridad, más recursos\nDSA: Rápido para firmar\nECDSA: Claves más pequeñas")
+        
+        algo_desc_layout.addWidget(self.algo_combo)
+        algo_desc_layout.addWidget(algo_info)
+        algo_layout.addLayout(algo_desc_layout)
+        
+        key_layout.addWidget(algo_frame)
 
-        # Botón para generar claves
+        # Parámetros adicionales (opcional)
+        params_frame = QFrame()
+        params_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 6px;
+                padding: 10px;
+                margin-top: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        params_layout = QVBoxLayout(params_frame)
+        
+        params_label = QLabel("Configuración (opcional):")
+        params_label.setStyleSheet("font-weight: bold; color: #34495e;")
+        params_layout.addWidget(params_label)
+        
+        key_size_layout = QHBoxLayout()
+        key_size_layout.addWidget(QLabel("Tamaño de clave:"))
+        key_size_combo = QComboBox()
+        key_size_combo.addItems(['2048 bits', '3072 bits', '4096 bits'])
+        key_size_combo.setStyleSheet("padding: 5px; border: 1px solid #bdc3c7; border-radius: 3px;")
+        key_size_layout.addWidget(key_size_combo)
+        params_layout.addLayout(key_size_layout)
+        
+        key_layout.addWidget(params_frame)
+        from PyQt5.QtWidgets import QStyle
+        # Botón para generar claves con estilo mejorado
         gen_key_btn = QPushButton("Generar Par de Claves")
+        gen_key_btn.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
         gen_key_btn.clicked.connect(self.generate_keys)
+        gen_key_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2980b9;
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 5px;
+                font-weight: bold;
+                margin-top: 15px;
+            }
+            QPushButton:hover {
+                background-color: #3498db;
+            }
+            QPushButton:pressed {
+                background-color: #1c6ea4;
+            }
+        """)
         key_layout.addWidget(gen_key_btn)
+        
+        # Espacio adicional al final
+        key_layout.addStretch()
 
-        main_layout.addWidget(key_section)
-
-        # Sección de firma y verificación
+        # ---- SECCIÓN DERECHA: FIRMA Y VERIFICACIÓN ----
         sign_section = QFrame()
         sign_section.setStyleSheet("""
             QFrame {
                 background-color: #f8f9fa;
-                border-radius: 5px;
-                padding: 15px;
-                margin: 10px 0;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 5px;
+                border: 1px solid #e0e0e0;
             }
         """)
         sign_layout = QVBoxLayout(sign_section)
 
-        # Selector de operación
-        op_layout = QHBoxLayout()
-        op_layout.addWidget(QLabel("Operación:"))
+        # Título con icono
+        sign_title_layout = QHBoxLayout()
+        # sign_icon = QLabel("📝")
+        # sign_icon.setStyleSheet("font-size: 22px; margin-right: 10px;")
+        sign_title = QLabel("Firma y Verificación")
+        sign_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #27ae60;")
+        # sign_title_layout.addWidget(sign_icon)
+        sign_title_layout.addWidget(sign_title)
+        sign_title_layout.addStretch()
+        sign_layout.addLayout(sign_title_layout)
+
+        # Descripción de la sección
+        sign_desc = QLabel("Firma documentos para garantizar su autenticidad o verifica firmas existentes")
+        sign_desc.setWordWrap(True)
+        sign_desc.setStyleSheet("color: #7f8c8d; margin-bottom: 15px;")
+        sign_layout.addWidget(sign_desc)
+
+        # Selector de operación con estilo mejorado
+        op_frame = QFrame()
+        op_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 6px;
+                padding: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        op_layout = QVBoxLayout(op_frame)
+        
+        op_label = QLabel("Operación:")
+        op_label.setStyleSheet("font-weight: bold; color: #34495e;")
+        op_layout.addWidget(op_label)
+        
         self.op_combo = QComboBox()
         self.op_combo.addItems(['Firmar Documento', 'Verificar Firma'])
         self.op_combo.currentIndexChanged.connect(self.toggle_key_selection)
+        self.op_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background-color: white;
+            }
+        """)
         op_layout.addWidget(self.op_combo)
-        sign_layout.addLayout(op_layout)
+        
+        sign_layout.addWidget(op_frame)
 
-        # Selección de archivo
-        file_layout = QHBoxLayout()
+        # Selección de archivo con estilo mejorado
+        file_frame = QFrame()
+        file_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 6px;
+                padding: 10px;
+                margin-top: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        file_layout = QVBoxLayout(file_frame)
+        
+        file_label = QLabel("Documento:")
+        file_label.setStyleSheet("font-weight: bold; color: #34495e;")
+        file_layout.addWidget(file_label)
+        
+        file_input_layout = QHBoxLayout()
         self.file_path = QLineEdit()
         self.file_path.setPlaceholderText("Seleccione un archivo...")
-        file_layout.addWidget(self.file_path)
+        self.file_path.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+            }
+        """)
         browse_btn = QPushButton("Examinar")
         browse_btn.clicked.connect(self.browse_file)
-        file_layout.addWidget(browse_btn)
-        sign_layout.addLayout(file_layout)
+        browse_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #7f8c8d;
+            }
+        """)
+        file_input_layout.addWidget(self.file_path)
+        file_input_layout.addWidget(browse_btn)
+        file_layout.addLayout(file_input_layout)
+        
+        sign_layout.addWidget(file_frame)
 
-        # Selección de clave
-        self.key_selection = QHBoxLayout()
+        # Selección de clave con estilo mejorado
+        key_frame = QFrame()
+        key_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 6px;
+                padding: 10px;
+                margin-top: 10px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        key_input_layout = QVBoxLayout(key_frame)
+        
+        self.key_label = QLabel("Archivo de clave:")
+        self.key_label.setStyleSheet("font-weight: bold; color: #34495e;")
+        key_input_layout.addWidget(self.key_label)
+        
+        key_browse_layout = QHBoxLayout()
         self.key_path = QLineEdit()
         self.key_path.setPlaceholderText("Seleccione archivo de clave...")
-        self.key_selection.addWidget(self.key_path)
+        self.key_path.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+            }
+        """)
         key_browse_btn = QPushButton("Examinar")
         key_browse_btn.clicked.connect(self.browse_key)
-        self.key_selection.addWidget(key_browse_btn)
-        sign_layout.addLayout(self.key_selection)
+        key_browse_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #7f8c8d;
+            }
+        """)
+        key_browse_layout.addWidget(self.key_path)
+        key_browse_layout.addWidget(key_browse_btn)
+        key_input_layout.addLayout(key_browse_layout)
+        
+        sign_layout.addWidget(key_frame)
 
-        # Botón de ejecución
-        execute_btn = QPushButton("Ejecutar")
+        # Botón de ejecución con estilo mejorado
+        execute_btn = QPushButton("Ejecutar Operación")
         execute_btn.clicked.connect(self.execute_operation)
+        execute_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 5px;
+                font-weight: bold;
+                margin-top: 15px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #219653;
+            }
+        """)
         sign_layout.addWidget(execute_btn)
+        
+        # Espacio adicional al final
+        sign_layout.addStretch()
 
-        main_layout.addWidget(sign_section)
+        # Añadir las dos secciones al layout horizontal
+        sections_layout.addWidget(key_section, 40)  # 40% del espacio
+        sections_layout.addWidget(sign_section, 60)  # 60% del espacio
+        main_layout.addLayout(sections_layout)
 
-        # Área de resultados
-        result_label = QLabel("Resultado:")
-        main_layout.addWidget(result_label)
+        # Área de resultados con estilo mejorado
+        result_section = QFrame()
+        result_section.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                padding: 15px;
+                margin-top: 15px;
+                border: 1px solid #e0e0e0;
+            }
+        """)
+        result_layout = QVBoxLayout(result_section)
+        
+        result_header = QHBoxLayout()
+        # result_icon = QLabel("📋")
+        # result_icon.setStyleSheet("font-size: 18px; margin-right: 10px;")
+        result_label = QLabel("Resultado de la Operación")
+        result_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #34495e;")
+        # result_header.addWidget(result_icon)
+        result_header.addWidget(result_label)
+        result_header.addStretch()
+        
+        # Añadir botón para copiar resultado
+        copy_btn = QPushButton("Copiar")
+        copy_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #7f8c8d;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #95a5a6;
+            }
+        """)
+        copy_btn.clicked.connect(self.copy_result)
+        result_header.addWidget(copy_btn)
+        
+        result_layout.addLayout(result_header)
         
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        self.result_text.setMinimumHeight(100)
-        main_layout.addWidget(self.result_text)
+        self.result_text.setMinimumHeight(120)
+        self.result_text.setStyleSheet("""
+            QTextEdit {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                padding: 10px;
+                font-family: "Courier New", monospace;
+            }
+        """)
+        result_layout.addWidget(self.result_text)
+        
+        main_layout.addWidget(result_section)
 
+        # Estado de verificación (visible solo cuando es relevante)
+        self.verification_status = QFrame()
+        self.verification_status.setVisible(False)
+        self.verification_status.setStyleSheet("""
+            QFrame {
+                border-radius: 5px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+        """)
+        verification_layout = QHBoxLayout(self.verification_status)
+        
+        self.status_icon = QLabel()
+        self.status_icon.setStyleSheet("font-size: 24px; margin-right: 10px;")
+        verification_layout.addWidget(self.status_icon)
+        
+        self.status_label = QLabel()
+        self.status_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        verification_layout.addWidget(self.status_label)
+        verification_layout.addStretch()
+        
+        main_layout.addWidget(self.verification_status)
+
+        # Add the main_frame to the layout
         layout.addWidget(main_frame)
-        self.setCentralWidget(widget)
+
+        # Create a QScrollArea
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)  # Allow the widget to resize
+        scroll_area.setWidget(widget)  # Set the main widget as the scrollable widget
+
+        # Set the QScrollArea as the central widget
+        self.setCentralWidget(scroll_area)
+
+        # Inicializar la selección
+        self.toggle_key_selection()
 
     def toggle_key_selection(self):
         operation = self.op_combo.currentText()
         if operation == 'Firmar Documento':
-            self.key_path.setPlaceholderText("Seleccione archivo de clave privada...")
+            self.key_label.setText("Archivo de clave privada:")
+            self.key_path.setPlaceholderText("Seleccione archivo de clave privada (*.pem)...")
+            # Ocultar el estado de verificación
+            self.verification_status.setVisible(False)
         else:
-            self.key_path.setPlaceholderText("Seleccione archivo de clave pública...")
+            self.key_label.setText("Archivo de clave pública:")
+            self.key_path.setPlaceholderText("Seleccione archivo de clave pública (*.pem)...")
 
     def browse_file(self):
         options = QFileDialog.Options()
@@ -852,16 +1208,33 @@ class SignatureWindow(QMainWindow):
         )
         if fileName:
             self.file_path.setText(fileName)
+            # Si estamos en modo verificación, intentar encontrar un archivo de firma automáticamente
+            if self.op_combo.currentText() == 'Verificar Firma':
+                signature_path = fileName + '.sig'
+                if os.path.exists(signature_path):
+                    self.signature_path = signature_path
+                    self.show_status_message("Archivo de firma encontrado", is_info=True)
+                else:
+                    self.signature_path = None
+                    self.show_status_message("No se encontró un archivo de firma automáticamente", is_info=True)
 
     def browse_key(self):
         options = QFileDialog.Options()
+        operation = self.op_combo.currentText()
+        dialog_title = "Seleccionar Clave Privada" if operation == 'Firmar Documento' else "Seleccionar Clave Pública"
+        
         fileName, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar Archivo de Clave", "", 
+            self, dialog_title, "", 
             "Archivos PEM (*.pem);;Todos los archivos (*)", 
             options=options
         )
         if fileName:
             self.key_path.setText(fileName)
+
+    def copy_result(self):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.result_text.toPlainText())
+        self.show_message("Resultado copiado al portapapeles")
 
     def generate_keys(self):
         try:
@@ -873,15 +1246,26 @@ class SignatureWindow(QMainWindow):
             # Generar par de claves
             self.ds.generate_key_pair(algorithm=algorithm, save_path=keys_dir)
             
-            self.result_text.setPlainText(
-                f"Par de claves {algorithm} generado exitosamente.\n"
-                f"Ubicación: {keys_dir}\n"
-                f"Archivos generados:\n"
-                f"- private_key_{algorithm.lower()}.pem\n"
-                f"- public_key_{algorithm.lower()}.pem"
+            # Formatear mensaje de resultado
+            private_key_path = os.path.join(keys_dir, f"private_key_{algorithm.lower()}.pem")
+            public_key_path = os.path.join(keys_dir, f"public_key_{algorithm.lower()}.pem")
+            
+            result_msg = (
+                f"✅ Par de claves {algorithm} generado exitosamente.\n\n"
+                f"📂 Ubicación: {keys_dir}\n\n"
+                f"📄 Archivos generados:\n"
+                f"  • 🔐 Clave privada: private_key_{algorithm.lower()}.pem\n"
+                f"  • 🔑 Clave pública: public_key_{algorithm.lower()}.pem\n\n"
+                f"⚠️ IMPORTANTE: Mantenga su clave privada segura y nunca la comparta."
             )
+            
+            self.result_text.setPlainText(result_msg)
+            self.show_status_message("Claves generadas con éxito", True)
+            
         except Exception as e:
-            self.result_text.setPlainText(f"Error al generar las claves: {str(e)}")
+            error_msg = f"❌ Error al generar las claves: {str(e)}"
+            self.result_text.setPlainText(error_msg)
+            self.show_status_message("Error al generar claves", False)
 
     def execute_operation(self):
         if not self.file_path.text():
@@ -904,19 +1288,33 @@ class SignatureWindow(QMainWindow):
                     self.file_path.text(), 
                     self.algo_combo.currentText()
                 )
-                self.result_text.setPlainText(
-                    f"Documento firmado exitosamente.\n"
-                    f"Firma guardada en: {signature_path}"
+                
+                # Formatear resultado de firma
+                result_msg = (
+                    f"✅ Documento firmado exitosamente\n\n"
+                    f"📄 Documento: {os.path.basename(self.file_path.text())}\n"
+                    f"🔏 Algoritmo: {self.algo_combo.currentText()}\n"
+                    f"📂 Firma guardada en: {signature_path}\n\n"
+                    f"El archivo de firma puede distribuirse junto con el documento\n"
+                    f"para permitir a otros verificar su autenticidad."
                 )
+                
+                self.result_text.setPlainText(result_msg)
+                self.show_status_message("Documento firmado con éxito", True)
+                
             else:  # Verificar firma
                 # Para verificar, solo necesitamos la clave pública
                 with open(self.key_path.text(), 'rb') as f:
                     public_key = load_pem_public_key(f.read())
                 
                 # Verificar firma
-                signature_path = self.file_path.text() + '.sig'
+                if self.signature_path:
+                    signature_path = self.signature_path
+                else:
+                    signature_path = self.file_path.text() + '.sig'
+                
                 if not os.path.exists(signature_path):
-                    raise FileNotFoundError("No se encontró el archivo de firma.")
+                    raise FileNotFoundError("No se encontró el archivo de firma (.sig).")
                 
                 is_valid = self.ds.verify_signature(
                     public_key,
@@ -924,20 +1322,98 @@ class SignatureWindow(QMainWindow):
                     signature_path
                 )
                 
-                if is_valid:
-                    self.result_text.setPlainText("La firma es válida. El documento no ha sido modificado.")
-                else:
-                    self.result_text.setPlainText("La firma NO es válida. El documento puede haber sido modificado.")
+                # Mostrar estado de verificación
+                self.show_verification_status(is_valid)
                 
-                # Mostrar el hash del documento
+                # Formatear resultado de verificación
+                result_msg = (
+                    f"{'✅ La firma es válida. El documento es auténtico.' if is_valid else '❌ La firma NO es válida. El documento puede haber sido modificado.'}\n\n"
+                    f"📄 Documento verificado: {os.path.basename(self.file_path.text())}\n"
+                    f"🔏 Archivo de firma: {os.path.basename(signature_path)}\n"
+                )
+                
+                # Añadir hash del documento
                 file_hash = self.ds.get_file_hash(self.file_path.text())
-                self.result_text.append(f"\nHash del documento (SHA-256):\n{file_hash}")
+                result_msg += f"\n📊 Hash SHA-256 del documento:\n{file_hash}"
+                
+                self.result_text.setPlainText(result_msg)
 
         except Exception as e:
-            self.result_text.setPlainText(f"Error: {str(e)}")
-            # Mostrar más detalles del error en modo debug
-            import traceback
-            print("Error detallado:", traceback.format_exc())
+            error_msg = f"❌ Error: {str(e)}"
+            self.result_text.setPlainText(error_msg)
+            self.show_status_message("Error en la operación", False)
+
+    def show_verification_status(self, is_valid):
+        self.verification_status.setVisible(True)
+        
+        if is_valid:
+            self.verification_status.setStyleSheet("""
+                QFrame {
+                    background-color: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-top: 10px;
+                }
+            """)
+            self.status_icon.setText("✅")
+            self.status_label.setText("Verificación Exitosa: Documento auténtico y sin modificaciones")
+            self.status_label.setStyleSheet("color: #155724; font-size: 16px; font-weight: bold;")
+        else:
+            self.verification_status.setStyleSheet("""
+                QFrame {
+                    background-color: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-top: 10px;
+                }
+            """)
+            self.status_icon.setText("❌")
+            self.status_label.setText("Verificación Fallida: La firma no es válida o el documento ha sido modificado")
+            self.status_label.setStyleSheet("color: #721c24; font-size: 16px; font-weight: bold;")
+
+    def show_status_message(self, message, success=True, is_info=False):
+        self.verification_status.setVisible(True)
+        
+        if is_info:
+            self.verification_status.setStyleSheet("""
+                QFrame {
+                    background-color: #cce5ff;
+                    border: 1px solid #b8daff;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-top: 10px;
+                }
+            """)
+            self.status_icon.setText("ℹ️")
+            self.status_label.setStyleSheet("color: #004085; font-size: 16px; font-weight: bold;")
+        elif success:
+            self.verification_status.setStyleSheet("""
+                QFrame {
+                    background-color: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-top: 10px;
+                }
+            """)
+            self.status_icon.setText("✅")
+            self.status_label.setStyleSheet("color: #155724; font-size: 16px; font-weight: bold;")
+        else:
+            self.verification_status.setStyleSheet("""
+                QFrame {
+                    background-color: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin-top: 10px;
+                }
+            """)
+            self.status_icon.setText("❌")
+            self.status_label.setStyleSheet("color: #721c24; font-size: 16px; font-weight: bold;")
+            
+        self.status_label.setText(message)
 
     def show_message(self, message):
         QMessageBox.information(self, "Información", message)
