@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton,
     QVBoxLayout, QLabel, QComboBox, QTextEdit, QLineEdit, QFileDialog, QMessageBox
@@ -19,10 +20,10 @@ import library.elgamal as elgamal_cipher
 import library.rsa as rsa_cipher
 import library.src.analisisdebrauer as atack_brauer
 import library.src.RSA_atack as atack_rsa
+import library.AES_CBC as CBC_cipher
+import library.AES_attack as CBC_attack
 
-# Se asume que en el módulo AES_cipher se definen:
-# AES_cipher.encryption_path = "library/img/encrypted_image"
-# AES_cipher.decryption_path = "library/img/decrypted_image"
+project_dir = os.path.join(os.path.dirname(__file__))
 
 
 class MainWindow(QMainWindow):
@@ -253,7 +254,7 @@ class ImageWindow(QMainWindow):
         # Menú desplegable para seleccionar la operación
         layout.addWidget(QLabel("Seleccione la operación:"))
         self.combo_operation = QComboBox()
-        self.combo_operation.addItems(["Encriptar", "Desencriptar"])
+        self.combo_operation.addItems(["Encriptar", "Desencriptar", "Ataque"])
         layout.addWidget(self.combo_operation)
 
         # Menú desplegable para seleccionar modo de encripcion
@@ -294,34 +295,65 @@ class ImageWindow(QMainWindow):
 
     def executeAES(self):
         key = self.key_input.text()
+        msg = ""
         if not key:
             self.showMessage("Ingrese una clave AES.")
             return
 
         operation = self.combo_operation.currentText()
         mode = self.enc_mode.currentText()
+        if operation != "Ataque" and not self.key_input.text():
+            self.showMessage("Ingrese una clave AES.")
+            return
+        key = self.key_input.text()  # Puede estar vacío en el caso de Ataque
         output_path = None
         try:
             if operation == "Encriptar":
-                # Se asume que encrypt_image guarda la imagen en AES_cipher.encryption_path
-                result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode)
-                output_path = AES_cipher.encryption_path
-            else:  # Desencriptar
-                result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode)
-                output_path = AES_cipher.decryption_path
+                if mode == "CBC":
+                    # Se utiliza el módulo CBC_cipher para el modo CBC
+                    result = CBC_cipher.encrypt_image(self.image_path, key, CBC_cipher.encryption_path, mode=mode)
+                    output_path = CBC_cipher.encryption_path
+                else:
+                    result = AES_cipher.encrypt_image(self.image_path, key, AES_cipher.encryption_path, mode)
+                    output_path = AES_cipher.encryption_path
 
-            if result:
-                msg = f"{operation} completado."
-                # Cargar la imagen resultante desde el path definido
+            elif operation == "Desencriptar":
+                if mode == "CBC":
+                    result = CBC_cipher.decrypt_image(self.image_path, key, CBC_cipher.decryption_path, mode=mode)
+                    output_path = CBC_cipher.decryption_path
+                else:
+                    result = AES_cipher.decrypt_image(self.image_path, key, AES_cipher.decryption_path, mode)
+                    output_path = AES_cipher.decryption_path
+
+            elif operation == "Ataque":
+                # Se asume que la imagen cifrada en modo CBC se encuentra en CBC_cipher.encryption_path
+                encrypted_path = CBC_cipher.encryption_path
+                key_found, decrypted_data = CBC_attack.brute_force(encrypted_path)
+                if key_found:
+                    self.showMessage("Clave encontrada: " + str(key_found))
+                    # Se guarda el resultado del ataque en un archivo
+                    output_path = os.path.join(project_dir, "library", "img", "attackedCBC_image.png")
+                    with open(output_path, "wb") as f:
+                        f.write(decrypted_data)
+                else:
+                    self.showMessage("No se encontró la clave.")
+                    return
+
+            else:
+                self.showMessage("Operación no válida.")
+                return
+
+            # Si se obtuvo un archivo de salida, se muestra la imagen resultante
+            if output_path:
                 pixmap = QPixmap(output_path)
                 self.image_label.setPixmap(pixmap.scaled(self.image_label.size()))
                 self.image_label.setScaledContents(True)
+                self.showMessage(operation + " completado.")
             else:
-                msg = f"Error en el proceso de {operation.lower()}."
+                self.showMessage("Error en el proceso de " + operation.lower() + ".")
         except Exception as e:
             msg = f"Error: {str(e)}"
-
-        self.showMessage(msg)
+            self.showMessage(msg)
 
     def showMessage(self, message):
         QMessageBox.information(self, "Información", message)
