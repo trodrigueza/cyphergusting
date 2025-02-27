@@ -29,7 +29,7 @@ class CaesarCipher:
         for key in range(26):
             psol = CaesarCipher.decrypt(ciphertext, str(key))
             possible_solutions.append(psol)
-            print(f"Key {key}: {psol}")
+        return possible_solutions
 
 # Example usage:
 # key = "3"

@@ -6,3 +6,6 @@ pillow==11.1.0
 pybind11==2.13.6
 pycparser==2.22
 sympy==1.13.3
+PyQt5==5.15.10
+matplotlib==3.8.4
+networkx==3.3
