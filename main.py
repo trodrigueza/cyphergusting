@@ -362,10 +362,10 @@ class TextWindow(QMainWindow):
         # Actualizar el label
         key_labels = {
             "Afin": "Coeficientes (a,b):",
-            "Caesar": "Desplazamiento:",
+            "Desplazamiento": "Desplazamiento:",
             "Hill": "Matriz de cifrado:",
-            "Permutativo": "Permutación:",
-            "Sustitutivo": "Alfabeto de sustitución:",
+            "Permutación": "Permutación:",
+            "Sustitución": "Alfabeto de sustitución:",
             "Vigenere": "Palabra clave:",
             "RSA": {
                 "Encriptar": "Clave pública (n,e):",
@@ -391,7 +391,21 @@ class TextWindow(QMainWindow):
 
         operation = self.combo_operation.currentText()
         cipher = self.combo_cipher.currentText()
-        show_key = operation in ["Encriptar", "Desencriptar"] or (operation == "Ataque" and cipher == "RSA")
+        
+        # Mostrar el campo de clave para:
+        # 1. Operaciones de encriptado y desencriptado
+        # 2. Ataque RSA (que necesita la clave pública)
+        # 3. Ataque Hill (que necesita texto claro conocido)
+        show_key = (operation in ["Encriptar", "Desencriptar"] or 
+                   (operation == "Ataque" and cipher == "RSA") or
+                   (operation == "Ataque" and cipher == "Hill"))
+        
+        # Actualizar el placeholder para el campo de clave en caso de ataque Hill
+        if operation == "Ataque" and cipher == "Hill":
+            self.key_input.setPlaceholderText("Ingrese el texto claro conocido")
+            self.key_label.setText("Texto claro conocido:")
+        else:
+            self.updateKeyField()  # Restaurar el placeholder normal
         
         self.key_label.setVisible(show_key)
         self.key_input.setVisible(show_key)
@@ -417,13 +431,13 @@ class TextWindow(QMainWindow):
             if operation == "Encriptar":
                 if cipher_type == "Afin":
                     result = affine_cipher.AffineCipher.encrypt(text, key)
-                elif cipher_type == "Caesar":
+                elif cipher_type == "Desplazamiento":
                     result = caesar_cipher.CaesarCipher.encrypt(text, key)
                 elif cipher_type == "Hill":
                     result = hill_cipher.HillCipher.encrypt(text, key)
-                elif cipher_type == "Permutativo":
+                elif cipher_type == "Permutación":
                     result = permutation_cipher.PermutationCipher.encrypt(text, key)
-                elif cipher_type == "Sustitutivo":
+                elif cipher_type == "Sustitución":
                     result = substitution_cipher.SubstitutionCipher.encrypt(text, key)
                 elif cipher_type == "Vigenere":
                     result = vigenere_cipher.VigenereCipher.encrypt(text, key)
@@ -440,13 +454,13 @@ class TextWindow(QMainWindow):
             elif operation == "Desencriptar":
                 if cipher_type == "Afin":
                     result = affine_cipher.AffineCipher.decrypt(text, key)
-                elif cipher_type == "Caesar":
+                elif cipher_type == "Desplazamiento":
                     result = caesar_cipher.CaesarCipher.decrypt(text, key)
                 elif cipher_type == "Hill":
                     result = hill_cipher.HillCipher.decrypt(text, key)
-                elif cipher_type == "Permutativo":
+                elif cipher_type == "Permutación":
                     result = permutation_cipher.PermutationCipher.decrypt(text, key)
-                elif cipher_type == "Sustitutivo":
+                elif cipher_type == "Sustitución":
                     result = substitution_cipher.SubstitutionCipher.decrypt(text, key)
                 elif cipher_type == "Vigenere":
                     result = vigenere_cipher.VigenereCipher.decrypt(text, key)
@@ -478,7 +492,24 @@ class TextWindow(QMainWindow):
                         result = atack_rsa.ataque_rsa(n, e, c)
                     except Exception as ex:
                         result = f"Error en el ataque RSA: {str(ex)}"
+                elif cipher_type == "Afin":
+                    result = affine_cipher.AffineCipher.attack(text)
+                elif cipher_type == "Desplazamiento":
+                    result = caesar_cipher.CaesarCipher.attack(text)
+                    # Capturar la salida del print en el resultado
+                    result = "Posibles soluciones:\n" + "\n".join([f"Clave {i}: {sol}" for i, sol in enumerate(result)])
+                elif cipher_type == "Hill":
+                    # Para Hill necesitamos texto claro conocido
+                    known_plaintext = None
+                    if key:  # Si hay texto en el campo de clave, lo usamos como texto claro conocido
+                        known_plaintext = key
+                    result = hill_cipher.HillCipher.attack(text, known_plaintext)
+                elif cipher_type == "Sustitución":
+                    result = substitution_cipher.SubstitutionCipher.attack(text)
+                elif cipher_type == "Vigenere":
+                    result = vigenere_cipher.VigenereCipher.attack(text)
                 else:
+                    # Para cualquier otro cifrado que no tenga implementado su propio ataque
                     atack_brauer.iniciar_visualizacion(text)
                     result = "Análisis de Brauer iniciado. Por favor revise la ventana de visualización."
         except Exception as e:
