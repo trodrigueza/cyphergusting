@@ -565,7 +565,7 @@ class ImageWindow(QMainWindow):
         controls_layout.addWidget(QLabel("Operación:"), 1, 0)
         self.combo_operation = QComboBox()
         self.combo_operation.addItems(["Encriptar", "Desencriptar", "Ataque"])
-        layout.addWidget(self.combo_operation)
+        controls_layout.addWidget(self.combo_operation, 1, 1)
 
         # Selector de modo de encripción
         controls_layout.addWidget(QLabel("Modo de encripción:"), 2, 0)
