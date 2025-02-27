@@ -1,40 +1,72 @@
 class SubstitutionCipher:
     @staticmethod
+    def intToPermutation(k):
+        """Convierte un entero k en la k-ésima permutación del alfabeto en orden lexicográfico"""
+        # Inicializar el alfabeto
+        alphabet = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        n = len(alphabet)
+        result = []
+        
+        # Convertir k a base factorial
+        factoradic = []
+        temp_k = k
+        for i in range(1, n + 1):
+            factoradic.append(temp_k % i)
+            temp_k //= i
+        factoradic.reverse()
+        
+        # Construir la permutación
+        for i in range(n):
+            pos = factoradic[i]
+            result.append(alphabet.pop(pos))
+        
+        return ''.join(result)
+
+    @staticmethod
     def encrypt(plaintext, key):
-        # Validate key
-        if len(key) != 26 or not all(c.isalpha() for c in key):
-            raise ValueError("Key should be an alphabet's permutation.")
-        
-        # Create mappings for lowercase and uppercase letters
-        key_low = key.lower()
-        key_up = key.upper()
-        
-        low_map = {}
-        up_map = {}
-        
-        # Create mapping for lowercase letters
-        for i, c in enumerate(key_low):
-            low_map[chr(ord('a') + i)] = c
-        
-        # Create mapping for uppercase letters
-        for i, c in enumerate(key_up):
-            up_map[chr(ord('A') + i)] = c
-        
-        # Encrypt the plaintext
-        ciphertext = ""
-        for c in plaintext:
-            if c.isalpha():
-                if c.islower():
-                    ciphertext += low_map[c]
+        try:
+            # Si la clave es un número, convertirlo a permutación
+            if key.isdigit():
+                key = SubstitutionCipher.intToPermutation(int(key))
+            print(key) 
+            # Validar que la clave sea una permutación válida del alfabeto
+            if len(key) != 26 or not all(c.isalpha() for c in key):
+                raise ValueError("Key should be either a number or an alphabet's permutation.")
+            
+            # Create mappings for lowercase and uppercase letters
+            key_low = key.lower()
+            key_up = key.upper()
+            
+            low_map = {}
+            up_map = {}
+            
+            # Create mapping for lowercase letters
+            for i, c in enumerate(key_low):
+                low_map[chr(ord('a') + i)] = c
+            
+            # Create mapping for uppercase letters
+            for i, c in enumerate(key_up):
+                up_map[chr(ord('A') + i)] = c
+            
+            # Encrypt the plaintext
+            ciphertext = ""
+            for c in plaintext:
+                if c.isalpha():
+                    if c.islower():
+                        ciphertext += low_map[c]
+                    else:
+                        ciphertext += up_map[c]
                 else:
-                    ciphertext += up_map[c]
-            else:
-                ciphertext += c  # Preserve non-alphabetic characters
-        
-        return ciphertext
+                    ciphertext += c  # Preserve non-alphabetic characters
+            
+            return ciphertext
+        except Exception as e:
+            raise ValueError("Error in encrypt method: " + str(e))
 
     @staticmethod
     def decrypt(ciphertext, key):
+        if key.isdigit():
+            key = SubstitutionCipher.intToPermutation(int(key))
         # Validate key
         if len(key) != 26 or not all(c.isalpha() for c in key):
             raise ValueError("Key should be an alphabet's permutation.")
